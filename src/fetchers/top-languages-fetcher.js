@@ -151,11 +151,63 @@ const fetchTopLanguages = async (
       Math.pow(repoNodes[name].size, size_weight) *
       Math.pow(repoNodes[name].count, count_weight);
   });
+  
+  const customLanguages = {
+    Python: {
+      name: "Python",
+      color: "#3572A5",  // Python's color
+      size: 95.20,
+      count: 10
+    },
+    Cython: {
+      name: "Cython",
+      color: "#fedf5b",  // Cython's color
+      size: 0.74,
+      count: 2
+    },
+    JavaScript: {
+      name: "JavaScript",
+      color: "#f1e05a",  // JavaScript's color
+      size: 1.50,
+      count: 3
+    },
+    TypeScript: {
+      name: "TypeScript",
+      color: "#2b7489",  // TypeScript's color
+      size: 1.04,
+      count: 3
+    },
+    "C++": {
+      name: "C++",
+      color: "#f34b7d",  // C++'s color
+      size: 0.27,
+      count: 1
+    },
+    Cuda: {
+      name: "Cuda",
+      color: "#3A4E3A",  // Cuda's color
+      size: 0.22,
+      count: 1
+    },
+    C: {
+      name: "C",
+      color: "#555555",  // C's color
+      size: 0.84,
+      count: 2
+    },
+    Vue: {
+      name: "Vue",
+      color: "#41b883",  // Vue's color
+      size: 0.19,
+      count: 1
+    }
+  };
 
-  const topLangs = Object.keys(repoNodes)
-    .sort((a, b) => repoNodes[b].size - repoNodes[a].size)
+  // Skip the actual GitHub API call and return our custom data
+  const topLangs = Object.keys(customLanguages)
+    .sort((a, b) => customLanguages[b].size - customLanguages[a].size)
     .reduce((result, key) => {
-      result[key] = repoNodes[key];
+      result[key] = customLanguages[key];
       return result;
     }, {});
 
