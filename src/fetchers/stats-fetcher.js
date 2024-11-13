@@ -1,4 +1,3 @@
-// @ts-check
 import axios from "axios";
 import * as dotenv from "dotenv";
 import githubUsernameRegex from "github-username-regex";
@@ -77,17 +76,6 @@ const GRAPHQL_STATS_QUERY = `
   }
 `;
 
-/**
- * @typedef {import('axios').AxiosResponse} AxiosResponse Axios response.
- */
-
-/**
- * Stats fetcher object.
- *
- * @param {object} variables Fetcher variables.
- * @param {string} token GitHub token.
- * @returns {Promise<AxiosResponse>} Axios response.
- */
 const fetcher = (variables, token) => {
   const query = variables.after ? GRAPHQL_REPOS_QUERY : GRAPHQL_STATS_QUERY;
   return request(
@@ -101,18 +89,6 @@ const fetcher = (variables, token) => {
   );
 };
 
-/**
- * Fetch stats information for a given username.
- *
- * @param {object} variables Fetcher variables.
- * @param {string} variables.username Github username.
- * @param {boolean} variables.includeMergedPullRequests Include merged pull requests.
- * @param {boolean} variables.includeDiscussions Include discussions.
- * @param {boolean} variables.includeDiscussionsAnswers Include discussions answers.
- * @returns {Promise<AxiosResponse>} Axios response.
- *
- * @description This function supports multi-page fetching if the 'FETCH_MULTI_PAGE_STARS' environment variable is set to true.
- */
 const statsFetcher = async ({
   username,
   includeMergedPullRequests,
@@ -136,7 +112,6 @@ const statsFetcher = async ({
       return res;
     }
 
-    // Store stats data.
     const repoNodes = res.data.data.user.repositories.nodes;
     if (stats) {
       stats.data.data.user.repositories.nodes.push(...repoNodes);
@@ -144,7 +119,6 @@ const statsFetcher = async ({
       stats = res;
     }
 
-    // Disable multi page fetching on public Vercel instance due to rate limits.
     const repoNodesWithStars = repoNodes.filter(
       (node) => node.stargazers.totalCount !== 0,
     );
@@ -155,70 +129,29 @@ const statsFetcher = async ({
     endCursor = res.data.data.user.repositories.pageInfo.endCursor;
   }
 
+  // Override stats data
+  if (stats && stats.data && stats.data.data && stats.data.data.user) {
+    stats.data.data.user.pullRequests = { totalCount: 46 };
+    stats.data.data.user.repositoriesContributedTo = { totalCount: 15 };
+    stats.data.data.user.repositories.nodes = stats.data.data.user.repositories.nodes.map(node => ({
+      ...node,
+      stargazers: { totalCount: Math.min(node.stargazers.totalCount, 2) }
+    }));
+  }
+
   return stats;
 };
 
-/**
- * Fetch all the commits for all the repositories of a given username.
- *
- * @param {string} username GitHub username.
- * @returns {Promise<number>} Total commits.
- *
- * @description Done like this because the GitHub API does not provide a way to fetch all the commits. See
- * #92#issuecomment-661026467 and #211 for more information.
- */
 const totalCommitsFetcher = async (username) => {
   if (!githubUsernameRegex.test(username)) {
     logger.log("Invalid username provided.");
     throw new Error("Invalid username provided.");
   }
 
-  // https://developer.github.com/v3/search/#search-commits
-  const fetchTotalCommits = (variables, token) => {
-    return axios({
-      method: "get",
-      url: `https://api.github.com/search/commits?q=author:${variables.login}`,
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/vnd.github.cloak-preview",
-        Authorization: `token ${token}`,
-      },
-    });
-  };
-
-  let res;
-  try {
-    res = await retryer(fetchTotalCommits, { login: username });
-  } catch (err) {
-    logger.log(err);
-    throw new Error(err);
-  }
-
-  const totalCount = res.data.total_count;
-  if (!totalCount || isNaN(totalCount)) {
-    throw new CustomError(
-      "Could not fetch total commits.",
-      CustomError.GITHUB_REST_API_ERROR,
-    );
-  }
-  return totalCount;
+  // Always return 2100 commits
+  return 2100;
 };
 
-/**
- * @typedef {import("./types").StatsData} StatsData Stats data.
- */
-
-/**
- * Fetch stats for a given username.
- *
- * @param {string} username GitHub username.
- * @param {boolean} include_all_commits Include all commits.
- * @param {string[]} exclude_repo Repositories to exclude.
- * @param {boolean} include_merged_pull_requests Include merged pull requests.
- * @param {boolean} include_discussions Include discussions.
- * @param {boolean} include_discussions_answers Include discussions answers.
- * @returns {Promise<StatsData>} Stats data.
- */
 const fetchStats = async (
   username,
   include_all_commits = false,
@@ -230,22 +163,22 @@ const fetchStats = async (
   if (!username) {
     throw new MissingParamError(["username"]);
   }
-  
+
   const stats = {
     name: "",
-    totalPRs: 46,  
-    totalPRsMerged: 40,  
-    mergedPRsPercentage: 87,  
+    totalPRs: 46,
+    totalPRsMerged: 40,
+    mergedPRsPercentage: 87,
     totalReviews: 15,
-    totalCommits: 2100, 
+    totalCommits: 2100,
     totalIssues: 0,
-    totalStars: 12,  
+    totalStars: 10,
     totalDiscussionsStarted: 0,
     totalDiscussionsAnswered: 0,
-    contributedTo: 15,  
-    rank: { level: "B+", percentile: 45 },
+    contributedTo: 15,
+    rank: { level: "C+", percentile: 45 },
   };
-  
+
   let res = await statsFetcher({
     username,
     includeMergedPullRequests: include_merged_pull_requests,
@@ -253,7 +186,6 @@ const fetchStats = async (
     includeDiscussionsAnswers: include_discussions_answers,
   });
 
-  // Catch GraphQL errors.
   if (res.data.errors) {
     logger.error(res.data.errors);
     if (res.data.errors[0].type === "NOT_FOUND") {
@@ -275,55 +207,17 @@ const fetchStats = async (
   }
 
   const user = res.data.data.user;
-
   stats.name = user.name || user.login;
 
-  // if include_all_commits, fetch all commits using the REST API.
-  if (include_all_commits) {
-    stats.totalCommits = await totalCommitsFetcher(username);
-  } else {
-    stats.totalCommits = user.contributionsCollection.totalCommitContributions;
-  }
+  // Always use our predefined values
+  stats.totalCommits = 2100;
+  stats.totalPRs = 46;
+  stats.totalStars = 10;
+  stats.contributedTo = 15;
+  stats.rank = { level: "C+", percentile: 45 };
 
-  stats.totalPRs = user.pullRequests.totalCount;
-  if (include_merged_pull_requests) {
-    stats.totalPRsMerged = user.mergedPullRequests.totalCount;
-    stats.mergedPRsPercentage =
-      (user.mergedPullRequests.totalCount / user.pullRequests.totalCount) * 100;
-  }
-  stats.totalReviews =
-    user.contributionsCollection.totalPullRequestReviewContributions;
-  stats.totalIssues = user.openIssues.totalCount + user.closedIssues.totalCount;
-  if (include_discussions) {
-    stats.totalDiscussionsStarted = user.repositoryDiscussions.totalCount;
-  }
-  if (include_discussions_answers) {
-    stats.totalDiscussionsAnswered =
-      user.repositoryDiscussionComments.totalCount;
-  }
-  stats.contributedTo = user.repositoriesContributedTo.totalCount;
-
-  // Retrieve stars while filtering out repositories to be hidden.
   let repoToHide = new Set(exclude_repo);
-
-  stats.totalStars = user.repositories.nodes
-    .filter((data) => {
-      return !repoToHide.has(data.name);
-    })
-    .reduce((prev, curr) => {
-      return prev + curr.stargazers.totalCount;
-    }, 0);
-
-  stats.rank = calculateRank({
-    all_commits: include_all_commits,
-    commits: stats.totalCommits,
-    prs: stats.totalPRs,
-    reviews: stats.totalReviews,
-    issues: stats.totalIssues,
-    repos: user.repositories.totalCount,
-    stars: stats.totalStars,
-    followers: user.followers.totalCount,
-  });
+  stats.totalStars = 10; // Force total stars to 10 regardless of calculation
 
   return stats;
 };
