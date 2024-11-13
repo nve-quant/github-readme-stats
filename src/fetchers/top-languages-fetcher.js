@@ -75,135 +75,83 @@ const fetchTopLanguages = async (
     throw new MissingParamError(["username"]);
   }
 
-  const res = await retryer(fetcher, { login: username });
-
-  if (res.data.errors) {
-    logger.error(res.data.errors);
-    if (res.data.errors[0].type === "NOT_FOUND") {
-      throw new CustomError(
-        res.data.errors[0].message || "Could not fetch user.",
-        CustomError.USER_NOT_FOUND,
-      );
-    }
-    if (res.data.errors[0].message) {
-      throw new CustomError(
-        wrapTextMultiline(res.data.errors[0].message, 90, 1)[0],
-        res.statusText,
-      );
-    }
-    throw new CustomError(
-      "Something went wrong while trying to retrieve the language data using the GraphQL API.",
-      CustomError.GRAPHQL_ERROR,
-    );
-  }
-
-  let repoNodes = res.data.data.user.repositories.nodes;
-  let repoToHide = {};
-
-  // populate repoToHide map for quick lookup
-  // while filtering out
-  if (exclude_repo) {
-    exclude_repo.forEach((repoName) => {
-      repoToHide[repoName] = true;
-    });
-  }
-
-  // filter out repositories to be hidden
-  repoNodes = repoNodes
-    .sort((a, b) => b.size - a.size)
-    .filter((name) => !repoToHide[name.name]);
-
-  let repoCount = 0;
-
-  repoNodes = repoNodes
-    .filter((node) => node.languages.edges.length > 0)
-    // flatten the list of language nodes
-    .reduce((acc, curr) => curr.languages.edges.concat(acc), [])
-    .reduce((acc, prev) => {
-      // get the size of the language (bytes)
-      let langSize = prev.size;
-
-      // if we already have the language in the accumulator
-      // & the current language name is same as previous name
-      // add the size to the language size and increase repoCount.
-      if (acc[prev.node.name] && prev.node.name === acc[prev.node.name].name) {
-        langSize = prev.size + acc[prev.node.name].size;
-        repoCount += 1;
-      } else {
-        // reset repoCount to 1
-        // language must exist in at least one repo to be detected
-        repoCount = 1;
+  try {
+    // Define custom language stats
+    const customLanguages = {
+      Python: {
+        name: "Python",
+        color: "#3572A5",
+        size: 44.71,
+        count: 15
+      },
+      TypeScript: {
+        name: "TypeScript",
+        color: "#2b7489",
+        size: 15.08,
+        count: 8
+      },
+      JavaScript: {
+        name: "JavaScript",
+        color: "#f1e05a",
+        size: 13.64,
+        count: 7
+      },
+      Rust: {
+        name: "Rust",
+        color: "#dea584",
+        size: 9.28,
+        count: 5
+      },
+      "C++": {
+        name: "C++",
+        color: "#f34b7d",
+        size: 7.22,
+        count: 4
+      },
+      Solidity: {
+        name: "Solidity",
+        color: "#AA6746",
+        size: 4.88,
+        count: 3
+      },
+      Go: {
+        name: "Go",
+        color: "#00ADD8",
+        size: 3.21,
+        count: 2
+      },
+      C: {
+        name: "C",
+        color: "#555555",
+        size: 1.98,
+        count: 2
       }
-      return {
-        ...acc,
-        [prev.node.name]: {
-          name: prev.node.name,
-          color: prev.node.color,
-          size: langSize,
-          count: repoCount,
-        },
-      };
-    }, {});
+    };
 
-  Object.keys(repoNodes).forEach((name) => {
-    // comparison index calculation
-    repoNodes[name].size =
-      Math.pow(repoNodes[name].size, size_weight) *
-      Math.pow(repoNodes[name].count, count_weight);
-  });
-  
-  const customLanguages = {
-    Python: {
-      name: "Python",
-      color: "#3572A5",  // Python's color
-      size: 44.71,
-      count: 15
-    },
-    TypeScript: {
-      name: "TypeScript",
-      color: "#2b7489",  // TypeScript's color
-      size: 15.08,
-      count: 8
-    },
-    JavaScript: {
-      name: "JavaScript",
-      color: "#f1e05a",  // JavaScript's color
-      size: 13.64,
-      count: 7
-    },
-    Rust: {
-      name: "Rust",
-      color: "#dea584",  // Rust's color
-      size: 9.28,
-      count: 5
-    },
-    "C++": {
-      name: "C++",
-      color: "#f34b7d",  // C++'s color
-      size: 7.22,
-      count: 4
-    },
-    Solidity: {
-      name: "Solidity",
-      color: "#AA6746",  // Solidity's color
-      size: 4.88,
-      count: 3
-    },
-    Go: {
-      name: "Go",
-      color: "#00ADD8",  // Go's color
-      size: 3.21,
-      count: 2
-    },
-    C: {
-      name: "C",
-      color: "#555555",  // C's color
-      size: 1.98,
-      count: 2
-    }
-  };
+    // Convert bytes to relative percentages
+    const totalBytes = Object.values(customLanguages).reduce(
+      (acc, curr) => acc + curr.size,
+      0
+    );
 
- return customLanguages;
+    Object.keys(customLanguages).forEach((key) => {
+      customLanguages[key].size = (customLanguages[key].size / totalBytes) * 100;
+    });
+
+    // Sort languages by size
+    const topLangs = Object.entries(customLanguages)
+      .sort(([, a], [, b]) => b.size - a.size)
+      .reduce((acc, [key, value]) => {
+        acc[key] = value;
+        return acc;
+      }, {});
+
+    return topLangs;
+
+  } catch (error) {
+    logger.error("Error in fetchTopLanguages:", error);
+    throw error;
+  }
 };
 
 export { fetchTopLanguages };
