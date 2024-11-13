@@ -203,14 +203,7 @@ const fetchTopLanguages = async (
     }
   };
 
- const topLangs = Object.keys(customLanguages)
-    .sort((a, b) => customLanguages[b].size - customLanguages[a].size)
-    .reduce((result, key) => {
-      result[key] = customLanguages[key];
-      return result;
-    }, {});
-
-  return topLangs;
+ return customLanguages;
 };
 
 export { fetchTopLanguages };
