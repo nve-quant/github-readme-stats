@@ -203,8 +203,7 @@ const fetchTopLanguages = async (
     }
   };
 
-  // Skip the actual GitHub API call and return our custom data
-  const topLangs = Object.keys(customLanguages)
+ const topLangs = Object.keys(customLanguages)
     .sort((a, b) => customLanguages[b].size - customLanguages[a].size)
     .reduce((result, key) => {
       result[key] = customLanguages[key];
