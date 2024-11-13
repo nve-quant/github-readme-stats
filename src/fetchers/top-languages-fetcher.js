@@ -156,50 +156,50 @@ const fetchTopLanguages = async (
     Python: {
       name: "Python",
       color: "#3572A5",  // Python's color
-      size: 95.20,
-      count: 10
-    },
-    Cython: {
-      name: "Cython",
-      color: "#fedf5b",  // Cython's color
-      size: 0.74,
-      count: 2
-    },
-    JavaScript: {
-      name: "JavaScript",
-      color: "#f1e05a",  // JavaScript's color
-      size: 1.50,
-      count: 3
+      size: 44.71,
+      count: 15
     },
     TypeScript: {
       name: "TypeScript",
       color: "#2b7489",  // TypeScript's color
-      size: 1.04,
-      count: 3
+      size: 15.08,
+      count: 8
+    },
+    JavaScript: {
+      name: "JavaScript",
+      color: "#f1e05a",  // JavaScript's color
+      size: 13.64,
+      count: 7
+    },
+    Rust: {
+      name: "Rust",
+      color: "#dea584",  // Rust's color
+      size: 9.28,
+      count: 5
     },
     "C++": {
       name: "C++",
       color: "#f34b7d",  // C++'s color
-      size: 0.27,
-      count: 1
+      size: 7.22,
+      count: 4
     },
-    Cuda: {
-      name: "Cuda",
-      color: "#3A4E3A",  // Cuda's color
-      size: 0.22,
-      count: 1
+    Solidity: {
+      name: "Solidity",
+      color: "#AA6746",  // Solidity's color
+      size: 4.88,
+      count: 3
+    },
+    Go: {
+      name: "Go",
+      color: "#00ADD8",  // Go's color
+      size: 3.21,
+      count: 2
     },
     C: {
       name: "C",
       color: "#555555",  // C's color
-      size: 0.84,
+      size: 1.98,
       count: 2
-    },
-    Vue: {
-      name: "Vue",
-      color: "#41b883",  // Vue's color
-      size: 0.19,
-      count: 1
     }
   };
 
