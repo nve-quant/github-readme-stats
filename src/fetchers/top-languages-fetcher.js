@@ -20,11 +20,10 @@ import {
  * @param {string} token GitHub token.
  * @returns {Promise<AxiosResponse>} Languages fetcher response.
  */
-
 const fetcher = (variables, token) => {
   return request(
     {
-      query: 
+      query: `
       query userInfo($login: String!) {
         user(login: $login) {
           # fetch only owner repos & not forks
@@ -44,18 +43,20 @@ const fetcher = (variables, token) => {
           }
         }
       }
-      ,
+      `,
       variables,
     },
     {
-      Authorization: token ${token},
+      Authorization: `token ${token}`,
     },
   );
 };
-/
+
+/**
  * @typedef {import("./types").TopLangData} TopLangData Top languages data.
  */
-/
+
+/**
  * Fetch top languages for a given username.
  *
  * @param {string} username GitHub username.
@@ -73,7 +74,9 @@ const fetchTopLanguages = async (
   if (!username) {
     throw new MissingParamError(["username"]);
   }
+
   try {
+    // Define custom language stats
     const customLanguages = {
       Python: {
         name: "Python",
@@ -168,6 +171,7 @@ const fetchTopLanguages = async (
       }, {});
 
     return topLangs;
+
   } catch (error) {
     logger.error("Error in fetchTopLanguages:", error);
     throw error;
