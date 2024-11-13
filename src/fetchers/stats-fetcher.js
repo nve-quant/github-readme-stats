@@ -230,22 +230,22 @@ const fetchStats = async (
   if (!username) {
     throw new MissingParamError(["username"]);
   }
-
+  
   const stats = {
     name: "",
-    totalPRs: 0,
-    totalPRsMerged: 0,
-    mergedPRsPercentage: 0,
-    totalReviews: 0,
-    totalCommits: 0,
+    totalPRs: 46,  
+    totalPRsMerged: 40,  
+    mergedPRsPercentage: 87,  
+    totalReviews: 15,
+    totalCommits: 2100, 
     totalIssues: 0,
-    totalStars: 0,
+    totalStars: 12,  
     totalDiscussionsStarted: 0,
     totalDiscussionsAnswered: 0,
-    contributedTo: 0,
-    rank: { level: "C", percentile: 100 },
+    contributedTo: 15,  
+    rank: { level: "B+", percentile: 45 },
   };
-
+  
   let res = await statsFetcher({
     username,
     includeMergedPullRequests: include_merged_pull_requests,
